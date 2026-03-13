@@ -51,7 +51,7 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxAgeSeconds: 60 * 60 * 24
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -65,7 +65,7 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           }
@@ -83,21 +83,23 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: true
+    host: '0.0.0.0'
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false,
-    minify: 'terser',
+    sourcemap: true,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
           'framework7': ['framework7', 'framework7-vue'],
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'utils': ['axios', 'dayjs', 'uuid']
+          'vue-vendor': ['vue', 'vue-router', 'pinia']
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: ['vue', 'vue-router', 'pinia', 'framework7', 'framework7-vue', 'axios']
   }
 })

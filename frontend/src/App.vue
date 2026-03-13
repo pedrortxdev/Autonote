@@ -1,13 +1,10 @@
 <template>
   <div id="app">
-    <!-- Status Bar para dispositivos iOS -->
-    <f7-statusbar v-if="$f7.device.ios" :overlay="true" />
-
     <!-- Views Container -->
     <f7-views>
-      <f7-view 
-        id="main-view" 
-        main 
+      <f7-view
+        id="main-view"
+        main
         :url="'/'"
         :router="true"
       >
@@ -16,7 +13,7 @@
     </f7-views>
 
     <!-- Toast Global para notificações -->
-    <f7-toast 
+    <f7-toast
       id="global-toast"
       :opened="toastOpened"
       :text="toastMessage"
@@ -26,7 +23,7 @@
     />
 
     <!-- Preloader Global -->
-    <f7-preloader 
+    <f7-preloader
       v-if="globalLoading"
       id="global-preloader"
       :backdrop="true"
@@ -77,7 +74,7 @@ provide('showToast', (message, options = {}) => {
   toastCloseButton.value = options.closeButton ?? true
   toastPosition.value = options.position ?? 'bottom'
   toastOpened.value = true
-  
+
   // Auto-fechar após 3 segundos se não tiver botão de fechar
   if (!toastCloseButton.value) {
     setTimeout(() => {
@@ -118,37 +115,19 @@ const onDialogClosed = () => {
 watch(route, (to, from) => {
   // Verificar autenticação em rotas protegidas
   const requiresAuth = to.meta.requiresAuth ?? true
-  
+
   if (requiresAuth && !authStore.isAuthenticated) {
     // Redirecionar para login se não estiver autenticado
     if (to.path !== '/login') {
-      window.framework7.router.navigate('/login/')
+      if (window.framework7?.router) {
+        window.framework7.router.navigate('/login/')
+      }
     }
   }
-  
+
   // Fechar loading ao mudar de rota
   globalLoading.value = false
 })
-
-// Inicializar tema baseado na preferência do usuário
-const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('pxd-theme')
-  const f7 = window.framework7
-  
-  if (f7) {
-    if (savedTheme === 'dark') {
-      f7.darkTheme = true
-    } else if (savedTheme === 'light') {
-      f7.darkTheme = false
-    } else {
-      // Usar preferência do sistema
-      f7.darkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-  }
-}
-
-// Executar inicialização
-initializeTheme()
 </script>
 
 <style scoped>
