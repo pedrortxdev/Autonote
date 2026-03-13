@@ -1,103 +1,362 @@
-# PXD Solutions - Frontend
+# Autonote Frontend
 
-Plataforma SaaS de extração automática de documentos para empresas brasileiras.
+NextJS 14+ PWA frontend for document capture and processing. Built with a "Dumb Client" architecture - handles only UI and sends files to the Go backend.
 
-## 🚀 Deploy na Vercel
+## 🚀 Features
 
-### Passo a passo:
+- **NextJS 14+ App Router** - Modern React framework with server components
+- **PWA Ready** - Installable on mobile devices, works offline-capable structure
+- **Mobile-First Design** - Optimized for touch, feels like a native app
+- **Camera Integration** - Uses `capture="environment"` to force rear camera
+- **Native FormData Uploads** - Files sent as multipart/form-data (NOT Base64)
+- **Silent Polling** - 3-second interval status checks without UI noise
+- **Anti-Stress Design** - Calming colors, smooth animations, reduced eye strain
+- **Accessibility** - WCAG 2.1 AA compliant, keyboard navigation, ARIA labels
+- **TypeScript** - Full type safety throughout
 
-1. **Faça push do código para o GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit - PXD Solutions Frontend"
-   git push origin main
-   ```
-
-2. **Conecte na Vercel**
-   - Acesse https://vercel.com
-   - Clique em "Add New Project"
-   - Importe seu repositório do GitHub
-
-3. **Configure as variáveis de ambiente** (opcional)
-   - `VITE_API_URL`: URL do seu backend
-   - `VITE_USE_MOCK`: `true` para usar mocks, `false` para backend real
-
-4. **Deploy**
-   - Clique em "Deploy"
-   - Aguarde o build (~2-3 minutos)
-   - Seu site estará online!
-
-### URL de produção:
-```
-https://pxd-solutions-frontend.vercel.app
-```
-
-## 🛠️ Desenvolvimento Local
-
-### Instalar dependências:
-```bash
-npm install
-```
-
-### Rodar em desenvolvimento:
-```bash
-npm run dev
-```
-
-Acesse: `http://localhost:3000`
-
-### Build de produção:
-```bash
-npm run build
-npm run preview
-```
-
-## 📱 Credenciais de Demo
-
-- **Email:** demo@pxdsolutions.com
-- **Senha:** demo123
-
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 frontend/
-├── public/              # Assets estáticos
-├── src/
-│   ├── components/      # Componentes Vue reutilizáveis
-│   ├── views/           # Páginas da aplicação
-│   ├── stores/          # Estado global (Pinia)
-│   ├── services/        # API e serviços externos
-│   ├── styles/          # Estilos globais
-│   ├── App.vue          # Componente raiz
-│   ├── main.js          # Entry point
-│   └── router.js        # Rotas da aplicação
-├── index.html
+├── app/
+│   ├── layout.tsx          # Root layout with PWA meta tags
+│   ├── page.tsx            # Login page
+│   ├── globals.css         # Global styles with Tailwind
+│   └── dashboard/
+│       └── page.tsx        # Main capture interface
+├── components/
+│   ├── CaptureButton.tsx   # Large camera button (50% screen)
+│   ├── StatusPoller.tsx    # Silent polling logic + status display
+│   ├── ResultDisplay.tsx   # Extracted data with confirmation
+│   └── Header.tsx          # App header with logout
+├── lib/
+│   └── api.ts              # API client (FormData uploads)
+├── types/
+│   └── index.ts            # TypeScript definitions
+├── public/
+│   ├── manifest.json       # PWA manifest
+│   └── icon-*.png          # App icons (generate these)
 ├── package.json
-├── vite.config.js
-└── vercel.json          # Configuração Vercel
+├── next.config.js
+├── tailwind.config.js
+├── tsconfig.json
+└── postcss.config.js
 ```
 
-## 🧰 Tech Stack
+## 🛠️ Setup
 
-- **Vue.js 3** - Framework progressivo
-- **Framework7** - UI nativa para mobile
-- **Pinia** - Gerenciamento de estado
-- **Vue Router** - Navegação
-- **Axios** - Cliente HTTP
-- **Vite** - Build tool
-- **PWA** - Progressive Web App
+### Prerequisites
 
-## ✨ Features
+- Node.js 18.17 or later
+- Go backend running (see `/backend` directory)
 
-- ✅ UI nativa para iOS e Android
-- ✅ PWA (funciona offline)
-- ✅ Dark/Light mode automático
-- ✅ Upload de documentos com progresso
-- ✅ Extração de dados com OCR
-- ✅ Export para Excel/CSV
-- ✅ WebSocket para atualizações em tempo real
-- ✅ Totalmente em Português (BR)
+### Installation
 
-## 📄 Licença
+```bash
+cd frontend
 
-MIT - PXD Solutions © 2024
+# Install dependencies
+npm install
+
+# Copy environment example
+cp .env.local.example .env.local
+```
+
+### Environment Variables
+
+Create `.env.local`:
+
+```env
+# Backend API URL
+# For local development:
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# For production (Vercel):
+# NEXT_PUBLIC_API_URL=https://your-backend-api.com
+```
+
+### Development
+
+```bash
+# Run development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+### Build
+
+```bash
+# Production build
+npm run build
+
+# Start production server
+npm start
+```
+
+## 🔌 Backend Integration
+
+### Required Backend Endpoints
+
+The frontend expects these endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/login` | Authenticate with company code |
+| `POST` | `/api/documents/upload` | Upload document (multipart/form-data) |
+| `GET` | `/api/tasks/:taskId` | Get task status for polling |
+| `POST` | `/api/tasks/:taskId/confirm` | Confirm and send to system |
+
+### Expected Request/Response Formats
+
+#### Login
+```json
+// POST /api/login
+{ "codigoEmpresa": "ABC123" }
+
+// Response
+{
+  "success": true,
+  "token": "jwt_token_here",
+  "empresaId": "ABC123"
+}
+```
+
+#### Upload
+```
+// POST /api/documents/upload (multipart/form-data)
+FormData {
+  file: File (image/* or application/pdf),
+  empresaId: string
+}
+
+// Response
+{
+  "success": true,
+  "taskId": "uuid_here",
+  "documentId": "uuid_here",
+  "message": "Upload successful"
+}
+```
+
+#### Task Status
+```
+// GET /api/tasks/:taskId
+
+// Response
+{
+  "id": "uuid",
+  "status": "pending" | "processing" | "completed" | "failed",
+  "progress": 0-100,
+  "result": {
+    "summary": "Fornecedor: Bosch, Valor: R$ 450",
+    "extractedData": {
+      "fornecedor": "Bosch",
+      "valor": "R$ 450,00",
+      "data": "2024-01-15"
+    },
+    "confidence": 0.95
+  },
+  "error": "error message if failed"
+}
+```
+
+#### Confirm
+```
+// POST /api/tasks/:taskId/confirm
+
+// Response
+{ "success": true }
+```
+
+### CORS Configuration
+
+Ensure your Go backend allows CORS from your frontend origin:
+
+```go
+// Example for Go backend
+func enableCors(w *http.ResponseWriter, req *http.Request) {
+    (*w).Header().Set("Access-Control-Allow-Origin", "*")
+    (*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    (*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+```
+
+## 📱 PWA Configuration
+
+### manifest.json
+
+Already configured in `/public/manifest.json`. Customize:
+- `name` and `short_name` for your app
+- `theme_color` to match your brand
+- Icons for home screen
+
+### Icons
+
+Generate PWA icons (required for installation):
+
+```bash
+# Recommended: Use https://realfavicongenerator.net/
+# Or use any icon generator to create:
+# - icon-192.png (192x192)
+# - icon-512.png (512x512)
+```
+
+Place generated icons in `/public/`.
+
+### Service Worker
+
+For full offline support, create `/public/sw.js`:
+
+```javascript
+// Basic service worker for caching
+const CACHE_NAME = 'autonote-v1';
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        '/',
+        '/dashboard',
+        '/manifest.json',
+      ]);
+    })
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((response) => {
+      return response || fetch(e.request);
+    })
+  );
+});
+```
+
+## 🚢 Deployment to Vercel
+
+### 1. Push to Git
+
+```bash
+git add frontend/
+git commit -m "Add NextJS frontend"
+git push
+```
+
+### 2. Connect to Vercel
+
+1. Go to [vercel.com](https://vercel.com)
+2. Click "Add New Project"
+3. Import your Git repository
+4. Set **Root Directory** to `frontend`
+5. Configure environment variables:
+   - `NEXT_PUBLIC_API_URL` = Your backend API URL
+
+### 3. Deploy
+
+Click "Deploy" - Vercel will automatically:
+- Detect NextJS
+- Install dependencies
+- Build the app
+- Deploy globally
+
+### 4. Custom Domain (Optional)
+
+In Vercel dashboard:
+1. Go to project settings
+2. Add custom domain
+3. Configure DNS as instructed
+
+### Environment Variables for Vercel
+
+| Variable | Development | Production |
+|----------|-------------|------------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | `https://api.yourdomain.com` |
+
+## 🎨 Design System
+
+### Colors (Anti-Stress Palette)
+
+```javascript
+// tailwind.config.js
+colors: {
+  primary: { /* Trustworthy blue */ },
+  success: { /* Calm green */ },
+  neutral: { /* Soft grays */ },
+}
+```
+
+### Typography
+
+- Font: Inter (optimized for screens)
+- Base size: 16px (1rem)
+- Scale: 1rem → 1.125rem → 1.25rem → 1.5rem → 1.875rem
+
+### Spacing
+
+- 8px grid system
+- Touch targets: minimum 44x44px (WCAG)
+- Consistent padding: 4, 6, 8, 12, 16, 24, 32
+
+### Animations
+
+- Duration: 200-400ms
+- Easing: `ease-out` for natural feel
+- Purpose: Only animate meaningful state changes
+
+## ♿ Accessibility
+
+- ✅ Semantic HTML throughout
+- ✅ ARIA labels on interactive elements
+- ✅ Focus visible states
+- ✅ Color contrast WCAG AA
+- ✅ Keyboard navigation
+- ✅ Screen reader announcements (`aria-live`)
+- ✅ Touch targets 44x44px minimum
+
+## 📊 Performance
+
+- Code splitting via NextJS App Router
+- Lazy loading for heavy components
+- Optimized font loading (no FOUT)
+- Minimal JavaScript bundle
+- CSS purging via Tailwind
+
+## 🔧 Troubleshooting
+
+### Camera not opening on mobile
+
+Ensure:
+1. Using HTTPS (required for camera access)
+2. `capture="environment"` attribute is present
+3. Browser supports media capture
+
+### Upload fails
+
+Check:
+1. CORS configuration on backend
+2. File size limits (frontend: 10MB, backend: configure accordingly)
+3. FormData is being used (not Base64)
+
+### PWA not installable
+
+Verify:
+1. `manifest.json` is accessible at `/manifest.json`
+2. Icons exist and are correctly sized
+3. HTTPS is enabled
+4. Service worker is registered
+
+## 📝 License
+
+MIT
+
+## 🤝 Contributing
+
+1. Create feature branch
+2. Make changes
+3. Test on mobile device
+4. Submit PR
+
+---
+
+**Built with ❤️ using NextJS 14+ and Tailwind CSS**
