@@ -1,10 +1,5 @@
 /**
  * PXD Solutions - Frontend Principal
- *
- * Aplicação Vue.js 3 + Framework7 para extração de documentos
- *
- * @author PXD Solutions
- * @version 1.0.0
  */
 
 import { createApp, nextTick } from 'vue'
@@ -67,7 +62,7 @@ app.use(pinia)
 // Instalar Framework7 Vue e guardar instância
 const f7 = app.use(Framework7Vue, f7params)
 
-// Guardar referência global para acesso posterior
+// Guardar referência global
 window.framework7 = f7
 
 // Instalar router
@@ -95,7 +90,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
   }
 })
 
-// Exportar para debug
+// Debug
 if (import.meta.env.DEV) {
   window.app = app
 }
