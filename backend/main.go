@@ -248,7 +248,7 @@ func (s *Server) setupRouter() *gin.Engine {
 
 		slog.Info("HTTP request",
 			"method", c.Request.Method,
-			"path", c.Request.Path,
+			"path", c.Request.URL.Path,
 			"status", c.Writer.Status(),
 			"latency", time.Since(start),
 			"client_ip", c.ClientIP(),
@@ -263,11 +263,19 @@ func (s *Server) setupRouter() *gin.Engine {
 		allowedOrigins := getEnv("ALLOWED_ORIGINS", "*")
 		origin := c.Request.Header.Get("Origin")
 
-		// If specific origins are configured, check if origin matches
-		if allowedOrigins != "*" {
+		// Codespaces development: allow all github.dev origins
+		if allowedOrigins == "*" {
+			// Check if it's a Codespaces origin
+			if strings.Contains(origin, ".app.github.dev") || strings.Contains(origin, "github.dev") {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			} else {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			}
+		} else {
+			// Specific origins configured - check if origin matches
 			originAllowed := false
 			for _, o := range strings.Split(allowedOrigins, ",") {
-				if o == origin {
+				if o == origin || strings.Contains(origin, o) {
 					originAllowed = true
 					break
 				}
@@ -277,13 +285,12 @@ func (s *Server) setupRouter() *gin.Engine {
 				return
 			}
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -312,6 +319,29 @@ func (s *Server) setupRouter() *gin.Engine {
 		v1.GET("/health", docHandler.HealthCheck)
 		v1.GET("/stats", docHandler.GetStats)
 	}
+
+	// Auth endpoint (root API level for frontend compatibility)
+	router.POST("/api/login", docHandler.Login)
+	router.OPTIONS("/api/login", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNoContent)
+	})
+
+	// Frontend-compatible API routes (alias to v1 endpoints)
+	router.POST("/api/documents/upload", docHandler.UploadDocument)
+	router.OPTIONS("/api/documents/upload", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNoContent)
+	})
+	router.GET("/api/tasks/:id", docHandler.GetDocumentStatus)
+	router.OPTIONS("/api/tasks/:id", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNoContent)
+	})
+	router.POST("/api/tasks/:id/confirm", func(c *gin.Context) {
+		// MVP: Just confirm without additional processing
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+	router.OPTIONS("/api/tasks/:id/confirm", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNoContent)
+	})
 
 	// Root endpoint with API info
 	router.GET("/", func(c *gin.Context) {

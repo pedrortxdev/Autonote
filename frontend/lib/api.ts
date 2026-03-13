@@ -14,6 +14,10 @@ import type {
 // Get base API URL from environment
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Check if running in Codespaces (use proxy to avoid CORS issues)
+const isCodespaces = typeof window !== 'undefined' && 
+  window.location.hostname.includes('app.github.dev');
+
 /**
  * Generic fetch wrapper with error handling
  */
@@ -21,11 +25,14 @@ async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${API_URL}${endpoint}`;
-  
+  // Use proxy in Codespaces to avoid CORS issues
+  const url = isCodespaces 
+    ? `/api/proxy?path=${encodeURIComponent(endpoint)}`
+    : `${API_URL}${endpoint}`;
+
   // Get auth token from session storage if available
-  const token = typeof window !== 'undefined' 
-    ? sessionStorage.getItem('auth_token') 
+  const token = typeof window !== 'undefined'
+    ? sessionStorage.getItem('auth_token')
     : null;
 
   const headers: HeadersInit = {
@@ -129,24 +136,26 @@ export async function uploadDocument(file: File): Promise<ApiResponse<UploadResp
   // Create native FormData object - this is the correct way to upload files
   const formData = new FormData();
   formData.append('file', file);
-  
+
   // Add empresa ID if available
   const empresaId = getEmpresaId();
   if (empresaId) {
     formData.append('empresaId', empresaId);
   }
 
-  // IMPORTANT: Don't set Content-Type header - let the browser set it with boundary
-  const url = `${API_URL}/api/documents/upload`;
-  
-  const token = typeof window !== 'undefined' 
-    ? sessionStorage.getItem('auth_token') 
+  // Use proxy in Codespaces to avoid CORS issues
+  const url = isCodespaces 
+    ? `/api/proxy?path=${encodeURIComponent('/api/documents/upload')}`
+    : `${API_URL}/api/documents/upload`;
+
+  const token = typeof window !== 'undefined'
+    ? sessionStorage.getItem('auth_token')
     : null;
 
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: token ? {
+      headers: token && !isCodespaces ? {
         'Authorization': `Bearer ${token}`,
       } : {},
       body: formData,

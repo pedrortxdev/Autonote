@@ -357,6 +357,54 @@ func (h *DocumentHandler) GetStats(c *gin.Context) {
 	})
 }
 
+// Login handles company code authentication (MVP - simple validation).
+//
+// This is a simplified login for MVP that accepts any company code
+// and returns a fake token. In production, this would validate against
+// a real authentication system.
+//
+// Request:
+//   - Method: POST
+//   - Path: /api/login
+//   - Body: { "codigoEmpresa": "ABC123" }
+//
+// Response (200 OK):
+//
+//	{
+//	    "success": true,
+//	    "token": "fake-jwt-token",
+//	    "empresaId": "ABC123"
+//	}
+func (h *DocumentHandler) Login(c *gin.Context) {
+	var req struct {
+		CodigoEmpresa string `json:"codigoEmpresa" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "codigoEmpresa is required",
+		})
+		return
+	}
+
+	if len(req.CodigoEmpresa) < 3 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "codigoEmpresa must be at least 3 characters",
+		})
+		return
+	}
+
+	// MVP: Accept any company code and return fake token
+	// In production, validate against database or auth service
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"token":     fmt.Sprintf("mvp-token-%s-%d", req.CodigoEmpresa, time.Now().Unix()),
+		"empresaId": req.CodigoEmpresa,
+	})
+}
+
 // ensure DocumentHandler implements proper error handling
 var (
 	_ error = ErrNoFile

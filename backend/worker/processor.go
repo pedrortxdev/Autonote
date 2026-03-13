@@ -206,13 +206,22 @@ func (p *Processor) extractDocumentData(ctx context.Context, imagePath string) (
 // performOCR uses Tesseract to extract text from an image.
 func (p *Processor) performOCR(ctx context.Context, imagePath string) (string, error) {
 	// Set language to Portuguese for better accuracy with Brazilian documents
-	p.ocrClient.SetLanguage("por")
+	if err := p.ocrClient.SetLanguage("por"); err != nil {
+		slog.Warn("Failed to set Portuguese language", "error", err)
+	}
 
 	// Set OCR engine mode (3 = legacy + LSTM)
-	p.ocrClient.SetVariable("tessedit_ocr_engine_mode", "3")
+	if err := p.ocrClient.SetVariable("tessedit_ocr_engine_mode", "3"); err != nil {
+		slog.Warn("Failed to set OCR engine mode", "error", err)
+	}
+
+	// Set image path for OCR
+	if err := p.ocrClient.SetImage(imagePath); err != nil {
+		return "", fmt.Errorf("failed to set image: %w", err)
+	}
 
 	// Perform OCR
-	text, err := p.ocrClient.Text(imagePath)
+	text, err := p.ocrClient.Text()
 	if err != nil {
 		return "", fmt.Errorf("tesseract OCR failed: %w", err)
 	}
